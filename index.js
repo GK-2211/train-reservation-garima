@@ -30,13 +30,32 @@ async function initializeSeats() {
 
 app.get('/seats', async (req, res) => {
   try {
-    const seats = await Seat.find();
-    res.json(seats);
+    const seatMatrix = await getSeatMatrix();
+    res.json({ seatMatrix });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+async function getSeatMatrix() {
+  const seats = await Seat.find();
+  const maxRow = 12; 
+  const seatMatrix = Array(maxRow)
+    .fill()
+    .map((_, rowIndex) => {
+      const totalSeatsInRow = rowIndex === maxRow - 1 ? 3 : 7;
+      return Array(totalSeatsInRow).fill({ booked: false });
+    });
+
+  seats.forEach(seat => {
+    if (seat.status === 'booked') {
+      seatMatrix[seat.rowNumber - 1][seat.seatNumber - 1].booked = true;
+    }
+  });
+
+  return seatMatrix;
+}
 
 app.post('/reserve', async (req, res) => {
   const { numSeatsToReserve } = req.body;
